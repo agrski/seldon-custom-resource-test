@@ -17,7 +17,7 @@ import (
 
 const k8sNamespace = "seldon"
 
-func getSeldonDeployment() (*seldonapi.SeldonDeployment, error) {
+func getResourceManifest() ([]byte, error) {
   var fileName string
   flag.StringVar(&fileName, "filename", "", "Name of file containing Seldon Core custom resource")
   flag.Parse()
@@ -31,15 +31,22 @@ func getSeldonDeployment() (*seldonapi.SeldonDeployment, error) {
     return nil, errors.New("File must exist and be readable")
   }
 
+  return fileContents, nil
+}
+
+func getSeldonDeployment(manifest []byte) (*seldonapi.SeldonDeployment, error) {
   decode := seldonscheme.Codecs.UniversalDeserializer().Decode
-  obj, _, err := decode(fileContents, nil, nil)
+  obj, _, err := decode(manifest, nil, nil)
   if err != nil {
     return nil, errors.New("Unable to decode file contents")
   }
 
-  deployment := obj.(*seldonapi.SeldonDeployment)
-
-  return deployment, nil
+  switch t := obj.(type) {
+  case *seldonapi.SeldonDeployment:
+    return obj.(*seldonapi.SeldonDeployment), nil
+  default:
+    nil, nil
+  }
 }
 
 func getSeldonDeploymentsClient() seldondeployment.SeldonDeploymentInterface {
