@@ -13,5 +13,5 @@ helm install seldon-core seldon-core-operator \
 # Run test
 
 # Tear down environment
-#kind delete cluster --name $cluster_name
+kind delete cluster --name $cluster_name
 
