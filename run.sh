@@ -13,6 +13,7 @@ helm install seldon-core seldon-core-operator \
   --repo https://storage.googleapis.com/seldon-charts
 
 # Run test
+go run main.go
 
 # Tear down environment
 kind delete cluster --name $cluster_name
