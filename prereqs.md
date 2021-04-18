@@ -2,6 +2,7 @@
 
 ## Dependencies
 
+* [Go](https://golang.org/doc/install)
 * [Docker](https://docs.docker.com/engine/install/)
   * Allow Docker to be run as [non-root](https://docs.docker.com/engine/install/linux-postinstall/)
 * [Kind](https://kind.sigs.k8s.io/docs/user/quick-start)
