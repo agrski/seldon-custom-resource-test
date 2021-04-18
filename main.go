@@ -10,6 +10,8 @@ import (
   "k8s.io/client-go/tools/clientcmd"
 )
 
+const k8sNamespace = "seldon"
+
 func getSeldonDeploymentsClient() seldondeployment.SeldonDeploymentInterface {
   kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 
@@ -23,12 +25,11 @@ func getSeldonDeploymentsClient() seldondeployment.SeldonDeploymentInterface {
     panic(err)
   }
 
-  return clientset.MachinelearningV1().SeldonDeployments("seldon")
+  return clientset.MachinelearningV1().SeldonDeployments(k8sNamespace)
 }
 
 func main() {
   getSeldonDeploymentsClient()
-
   fmt.Println("Created Seldon client")
 }
 
