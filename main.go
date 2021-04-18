@@ -5,11 +5,12 @@ import (
   "os"
   "path/filepath"
 
-  seldon "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned"
+  seldonclientset "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned"
+  seldondeployment "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned/typed/machinelearning.seldon.io/v1"
   "k8s.io/client-go/tools/clientcmd"
 )
 
-func main() {
+func getSeldonDeploymentsClient() seldondeployment.SeldonDeploymentInterface {
   kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 
   config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
@@ -17,12 +18,16 @@ func main() {
     panic(err)
   }
 
-  clientset, err := seldon.NewForConfig(config)
+  clientset, err := seldonclientset.NewForConfig(config)
   if err != nil {
     panic(err)
   }
 
-  clientset.MachinelearningV1().SeldonDeployments("seldon")
+  return clientset.MachinelearningV1().SeldonDeployments("seldon")
+}
+
+func main() {
+  getSeldonDeploymentsClient()
 
   fmt.Println("Created Seldon client")
 }
