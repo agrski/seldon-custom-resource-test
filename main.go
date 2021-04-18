@@ -49,20 +49,20 @@ func getSeldonDeployment(manifest []byte) (*seldonapi.SeldonDeployment, error) {
   }
 }
 
-func getSeldonDeploymentsClient() seldondeployment.SeldonDeploymentInterface {
+func getSeldonDeploymentsClient() (seldondeployment.SeldonDeploymentInterface, error) {
   kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 
   config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
   if err != nil {
-    panic(err)
+    return nil, err
   }
 
   clientset, err := seldonclientset.NewForConfig(config)
   if err != nil {
-    panic(err)
+    return nil, err
   }
 
-  return clientset.MachinelearningV1().SeldonDeployments(k8sNamespace)
+  return clientset.MachinelearningV1().SeldonDeployments(k8sNamespace), nil
 }
 
 func main() {
