@@ -45,7 +45,7 @@ func getSeldonDeployment(manifest []byte) (*seldonapi.SeldonDeployment, error) {
   case *seldonapi.SeldonDeployment:
     return obj.(*seldonapi.SeldonDeployment), nil
   default:
-    nil, nil
+    return nil, nil
   }
 }
 
