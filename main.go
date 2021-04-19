@@ -1,6 +1,7 @@
 package main
 
 import (
+  "context"
   "errors"
   "flag"
   "fmt"
@@ -12,6 +13,7 @@ import (
   seldonclientset "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned"
   seldonscheme "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned/scheme"
   seldondeployment "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned/typed/machinelearning.seldon.io/v1"
+  metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
   "k8s.io/client-go/tools/clientcmd"
 )
 
@@ -71,9 +73,17 @@ func main() {
     panic(err)
   }
 
-  getSeldonDeployment(manifest)
+  deployment, err := getSeldonDeployment(manifest)
+  if err != nil {
+    panic(err)
+  }
 
-  getSeldonDeploymentsClient()
-  fmt.Println("Created Seldon client")
+  deploymentClient, err := getSeldonDeploymentsClient()
+  if err != nil {
+    panic(err)
+  }
+
+  deploymentClient.Create(context.TODO(), deployment, metav1.CreateOptions{})
+  fmt.Println("Deployment created")
 }
 
