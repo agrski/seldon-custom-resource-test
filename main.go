@@ -66,6 +66,13 @@ func getSeldonDeploymentsClient() (seldondeployment.SeldonDeploymentInterface, e
 }
 
 func main() {
+  manifest, err := getResourceManifest()
+  if err != nil {
+    panic(err)
+  }
+
+  getSeldonDeployment(manifest)
+
   getSeldonDeploymentsClient()
   fmt.Println("Created Seldon client")
 }
