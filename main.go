@@ -41,7 +41,7 @@ func getSeldonDeployment(manifest []byte) (*seldonapi.SeldonDeployment, error) {
     return nil, errors.New("Unable to decode file contents")
   }
 
-  switch t := obj.(type) {
+  switch obj.(type) {
   case *seldonapi.SeldonDeployment:
     return obj.(*seldonapi.SeldonDeployment), nil
   default:
