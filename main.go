@@ -122,7 +122,10 @@ func main() {
     panic(err)
   }
 
-  createAndWaitForDeployment(deploymentClient, deployment)
+  err = createAndWaitForDeployment(deploymentClient, deployment)
+  if err != nil {
+    panic(err)
+  }
   fmt.Println("Deployment created successfully")
 
   deploymentClient.Delete(
