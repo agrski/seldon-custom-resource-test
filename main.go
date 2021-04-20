@@ -123,7 +123,13 @@ func main() {
   }
 
   createAndWaitForDeployment(deploymentClient, deployment)
-
   fmt.Println("Deployment created successfully")
+
+  deploymentClient.Delete(
+    context.TODO(),
+    deployment.ObjectMeta.Name,
+    metav1.DeleteOptions{},
+  )
+  fmt.Println("Deployment deleted")
 }
 
