@@ -14,6 +14,7 @@ import (
   seldonscheme "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned/scheme"
   seldondeployment "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned/typed/machinelearning.seldon.io/v1"
   metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+  "k8s.io/apimachinery/pkg/watch"
   "k8s.io/client-go/tools/clientcmd"
 )
 
@@ -83,7 +84,33 @@ func main() {
     panic(err)
   }
 
-  deploymentClient.Create(context.TODO(), deployment, metav1.CreateOptions{})
-  fmt.Println("Deployment created")
+  _, err = deploymentClient.Create(context.TODO(), deployment, metav1.CreateOptions{})
+  if err != nil {
+    panic(err)
+  }
+
+  watcher, err := deploymentClient.Watch(context.TODO(), metav1.ListOptions{})
+  if err != nil {
+    panic(err)
+  }
+
+watchLoop:
+  for e := range watcher.ResultChan() {
+    switch e.Type {
+    case watch.Modified:
+      if e.Object.(*seldonapi.SeldonDeployment).Status.State == seldonapi.StatusStateAvailable {
+        watcher.Stop()
+        break watchLoop
+      }
+    case watch.Error:
+      watcher.Stop()
+      panic("SeldonDeployment could not be created")
+    case watch.Deleted:
+      watcher.Stop()
+      panic("SeldonDeployment was deleted unexpectedly")
+    }
+  }
+
+  fmt.Println("Deployment created successfully")
 }
 
