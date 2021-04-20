@@ -68,23 +68,11 @@ func getSeldonDeploymentsClient() (seldondeployment.SeldonDeploymentInterface, e
   return clientset.MachinelearningV1().SeldonDeployments(k8sNamespace), nil
 }
 
-func main() {
-  manifest, err := getResourceManifest()
-  if err != nil {
-    panic(err)
-  }
-
-  deployment, err := getSeldonDeployment(manifest)
-  if err != nil {
-    panic(err)
-  }
-
-  deploymentClient, err := getSeldonDeploymentsClient()
-  if err != nil {
-    panic(err)
-  }
-
-  _, err = deploymentClient.Create(context.TODO(), deployment, metav1.CreateOptions{})
+func createAndWaitForDeployment(
+  deploymentClient seldondeployment.SeldonDeploymentInterface,
+  deployment *seldonapi.SeldonDeployment,
+) {
+  _, err := deploymentClient.Create(context.TODO(), deployment, metav1.CreateOptions{})
   if err != nil {
     panic(err)
   }
@@ -110,6 +98,25 @@ watchLoop:
       panic("SeldonDeployment was deleted unexpectedly")
     }
   }
+}
+
+func main() {
+  manifest, err := getResourceManifest()
+  if err != nil {
+    panic(err)
+  }
+
+  deployment, err := getSeldonDeployment(manifest)
+  if err != nil {
+    panic(err)
+  }
+
+  deploymentClient, err := getSeldonDeploymentsClient()
+  if err != nil {
+    panic(err)
+  }
+
+  createAndWaitForDeployment(deploymentClient, deployment)
 
   fmt.Println("Deployment created successfully")
 }
