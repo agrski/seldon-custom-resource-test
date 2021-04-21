@@ -163,11 +163,7 @@ func main() {
   fmt.Println("Deployment created successfully")
 
   desiredReplicas := int32(2)
-  err = scaleDeployment(
-    deploymentClient,
-    deploymentName,
-    desiredReplicas,
-  )
+  err = scaleDeployment(deploymentClient, deploymentName, desiredReplicas)
   if err != nil {
     log.Fatal(err)
   }
@@ -184,6 +180,7 @@ func main() {
     deployment.ObjectMeta.Name,
     metav1.DeleteOptions{},
   )
+
   fmt.Println("Deployment deleted")
 }
 
