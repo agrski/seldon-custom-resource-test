@@ -100,18 +100,11 @@ func awaitDeploymentAvailability(
   return errors.New(fmt.Sprintf("Deployment '%s' did not become ready", name))
 }
 
-func createAndWaitForDeployment(
+func createDeployment(
   deploymentClient seldondeployment.SeldonDeploymentInterface,
   deployment *seldonapi.SeldonDeployment,
 ) error {
-  deploymentName := deployment.ObjectMeta.Name
-
   _, err := deploymentClient.Create(context.TODO(), deployment, metav1.CreateOptions{})
-  if err != nil {
-    return err
-  }
-
-  err = awaitDeploymentAvailability(deploymentClient, deploymentName)
   return err
 }
 
@@ -136,11 +129,6 @@ func scaleDeployment(
     deployment,
     metav1.UpdateOptions{},
   )
-  if err != nil {
-    return err
-  }
-
-  err = awaitDeploymentAvailability(deploymentClient, name)
   return err
 }
 
@@ -155,26 +143,40 @@ func main() {
     log.Fatal(err)
   }
 
+  deploymentName := deployment.ObjectMeta.Name
+
   deploymentClient, err := getSeldonDeploymentsClient()
   if err != nil {
     log.Fatal(err)
   }
 
-  err = createAndWaitForDeployment(deploymentClient, deployment)
+  err = createDeployment(deploymentClient, deployment)
   if err != nil {
     log.Fatal(err)
   }
+
+  err = awaitDeploymentAvailability(deploymentClient, deploymentName)
+  if err != nil {
+    log.Fatal(err)
+  }
+
   fmt.Println("Deployment created successfully")
 
   desiredReplicas := int32(2)
   err = scaleDeployment(
     deploymentClient,
-    deployment.ObjectMeta.Name,
+    deploymentName,
     desiredReplicas,
   )
   if err != nil {
     log.Fatal(err)
   }
+
+  err = awaitDeploymentAvailability(deploymentClient, deploymentName)
+  if err != nil {
+    log.Fatal(err)
+  }
+
   fmt.Printf("Deployment scaled to %v replicas\n", desiredReplicas)
 
   deploymentClient.Delete(
