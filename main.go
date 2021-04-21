@@ -115,7 +115,7 @@ func scaleDeployment(
     return errors.New("Cannot scale nil deployment")
   }
 
-  newDeployment = deployment.DeepCopy()
+  newDeployment := deployment.DeepCopy()
   newDeployment.Spec.Replicas = &replicas
 
   _, err := deploymentClient.Update(
@@ -152,8 +152,8 @@ func main() {
   }
   fmt.Println("Deployment created successfully")
 
-  desiredReplicas := 2
-  deployment, err = scaleDeployment(deploymentClient, deployment, desiredReplicas)
+  desiredReplicas := int32(2)
+  err = scaleDeployment(deploymentClient, deployment, desiredReplicas)
   if err != nil {
     panic(err)
   }
