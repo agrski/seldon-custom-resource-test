@@ -146,19 +146,16 @@ func main() {
   deployment, err := getSeldonDeployment(manifest)
   if err != nil {
     log.Fatal(err)
-    return
   }
 
   deploymentClient, err := getSeldonDeploymentsClient()
   if err != nil {
     log.Fatal(err)
-    return
   }
 
   err = createAndWaitForDeployment(deploymentClient, deployment)
   if err != nil {
     log.Fatal(err)
-    return
   }
   fmt.Println("Deployment created successfully")
 
@@ -170,7 +167,6 @@ func main() {
   )
   if err != nil {
     log.Fatal(err)
-    return
   }
   fmt.Printf("Deployment scaled to %v replicas\n", desiredReplicas)
 
