@@ -132,6 +132,8 @@ func scaleDeployment(
     return err
   }
 
+  // TODO - wait for replicas to both become available.
+
   return nil
 }
 
