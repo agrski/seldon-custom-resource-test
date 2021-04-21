@@ -6,6 +6,7 @@ import (
   "flag"
   "fmt"
   "io/ioutil"
+  "log"
   "os"
   "path/filepath"
 
@@ -137,22 +138,25 @@ func scaleDeployment(
 func main() {
   manifest, err := getResourceManifest()
   if err != nil {
-    panic(err)
+    log.Fatal(err)
   }
 
   deployment, err := getSeldonDeployment(manifest)
   if err != nil {
-    panic(err)
+    log.Fatal(err)
+    return
   }
 
   deploymentClient, err := getSeldonDeploymentsClient()
   if err != nil {
-    panic(err)
+    log.Fatal(err)
+    return
   }
 
   err = createAndWaitForDeployment(deploymentClient, deployment)
   if err != nil {
-    panic(err)
+    log.Fatal(err)
+    return
   }
   fmt.Println("Deployment created successfully")
 
@@ -163,7 +167,8 @@ func main() {
     desiredReplicas,
   )
   if err != nil {
-    panic(err)
+    log.Fatal(err)
+    return
   }
   fmt.Printf("Deployment scaled to %v replicas\n", desiredReplicas)
 
