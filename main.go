@@ -152,6 +152,8 @@ func main() {
   }
   fmt.Println("Deployment created successfully")
 
+  scaleDeployment(deploymentClient, deployment, 2)
+
   deploymentClient.Delete(
     context.TODO(),
     deployment.ObjectMeta.Name,
