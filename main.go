@@ -152,7 +152,12 @@ func main() {
   }
   fmt.Println("Deployment created successfully")
 
-  scaleDeployment(deploymentClient, deployment, 2)
+  desiredReplicas := 2
+  deployment, err = scaleDeployment(deploymentClient, deployment, desiredReplicas)
+  if err != nil {
+    panic(err)
+  }
+  fmt.Printf("Deployment scaled to %v replicas\n", desiredReplicas)
 
   deploymentClient.Delete(
     context.TODO(),
