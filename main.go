@@ -106,6 +106,30 @@ func createAndWaitForDeployment(
   return errors.New(fmt.Sprintf("Deployment '%s' did not become ready", deploymentName))
 }
 
+func scaleDeployment(
+  deploymentClient seldondeployment.SeldonDeploymentInterface,
+  deployment *seldonapi.SeldonDeployment,
+  replicas int32,
+) error {
+  if deployment == nil {
+    return errors.New("Cannot scale nil deployment")
+  }
+
+  newDeployment = deployment.DeepCopy()
+  newDeployment.Spec.Replicas = &replicas
+
+  _, err := deploymentClient.Update(
+    context.TODO(),
+    newDeployment,
+    metav1.UpdateOptions{},
+  )
+  if err != nil {
+    return err
+  }
+
+  return nil
+}
+
 func main() {
   manifest, err := getResourceManifest()
   if err != nil {
