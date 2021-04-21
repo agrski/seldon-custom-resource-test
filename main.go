@@ -69,17 +69,10 @@ func getSeldonDeploymentsClient() (seldondeployment.SeldonDeploymentInterface, e
   return clientset.MachinelearningV1().SeldonDeployments(k8sNamespace), nil
 }
 
-func createAndWaitForDeployment(
+func awaitDeploymentAvailability(
   deploymentClient seldondeployment.SeldonDeploymentInterface,
-  deployment *seldonapi.SeldonDeployment,
+  name string,
 ) error {
-  deploymentName := deployment.ObjectMeta.Name
-
-  _, err := deploymentClient.Create(context.TODO(), deployment, metav1.CreateOptions{})
-  if err != nil {
-    return err
-  }
-
   watcher, err := deploymentClient.Watch(context.TODO(), metav1.ListOptions{})
   if err != nil {
     return err
@@ -90,7 +83,7 @@ func createAndWaitForDeployment(
     case watch.Modified:
       updatedDeployment := e.Object.(*seldonapi.SeldonDeployment)
 
-      if updatedDeployment.ObjectMeta.Name == deploymentName &&
+      if updatedDeployment.ObjectMeta.Name == name &&
       updatedDeployment.Status.State == seldonapi.StatusStateAvailable {
         watcher.Stop()
         return nil
@@ -104,7 +97,22 @@ func createAndWaitForDeployment(
     }
   }
 
-  return errors.New(fmt.Sprintf("Deployment '%s' did not become ready", deploymentName))
+  return errors.New(fmt.Sprintf("Deployment '%s' did not become ready", name))
+}
+
+func createAndWaitForDeployment(
+  deploymentClient seldondeployment.SeldonDeploymentInterface,
+  deployment *seldonapi.SeldonDeployment,
+) error {
+  deploymentName := deployment.ObjectMeta.Name
+
+  _, err := deploymentClient.Create(context.TODO(), deployment, metav1.CreateOptions{})
+  if err != nil {
+    return err
+  }
+
+  err = awaitDeploymentAvailability(deploymentClient, deploymentName)
+  return err
 }
 
 func scaleDeployment(
@@ -132,31 +140,8 @@ func scaleDeployment(
     return err
   }
 
-  watcher, err := deploymentClient.Watch(context.TODO(), metav1.ListOptions{})
-  if err != nil {
-    return err
-  }
-
-  for e := range watcher.ResultChan() {
-    switch e.Type {
-    case watch.Modified:
-      updatedDeployment := e.Object.(*seldonapi.SeldonDeployment)
-
-      if updatedDeployment.ObjectMeta.Name == name &&
-      updatedDeployment.Status.State == seldonapi.StatusStateAvailable {
-        watcher.Stop()
-        return nil
-      }
-    case watch.Error:
-      watcher.Stop()
-      return errors.New("SeldonDeployment could not be created")
-    case watch.Deleted:
-      watcher.Stop()
-      return errors.New("SeldonDeployment was deleted unexpectedly")
-    }
-  }
-
-  return errors.New(fmt.Sprintf("Deployment '%s' did not become ready", name))
+  err = awaitDeploymentAvailability(deploymentClient, name)
+  return err
 }
 
 func main() {
