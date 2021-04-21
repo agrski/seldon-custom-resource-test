@@ -108,19 +108,23 @@ func createAndWaitForDeployment(
 
 func scaleDeployment(
   deploymentClient seldondeployment.SeldonDeploymentInterface,
-  deployment *seldonapi.SeldonDeployment,
+  name string,
   replicas int32,
 ) error {
-  if deployment == nil {
-    return errors.New("Cannot scale nil deployment")
+  deployment, err := deploymentClient.Get(
+    context.TODO(),
+    name,
+    metav1.GetOptions{},
+  )
+  if err != nil {
+    return err
   }
 
-  newDeployment := deployment.DeepCopy()
-  newDeployment.Spec.Replicas = &replicas
+  deployment.Spec.Replicas = &replicas
 
-  _, err := deploymentClient.Update(
+  _, err = deploymentClient.Update(
     context.TODO(),
-    newDeployment,
+    deployment,
     metav1.UpdateOptions{},
   )
   if err != nil {
@@ -153,7 +157,11 @@ func main() {
   fmt.Println("Deployment created successfully")
 
   desiredReplicas := int32(2)
-  err = scaleDeployment(deploymentClient, deployment, desiredReplicas)
+  err = scaleDeployment(
+    deploymentClient,
+    deployment.ObjectMeta.Name,
+    desiredReplicas,
+  )
   if err != nil {
     panic(err)
   }
