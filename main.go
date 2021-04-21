@@ -132,9 +132,31 @@ func scaleDeployment(
     return err
   }
 
-  // TODO - wait for replicas to both become available.
+  watcher, err := deploymentClient.Watch(context.TODO(), metav1.ListOptions{})
+  if err != nil {
+    return err
+  }
 
-  return nil
+  for e := range watcher.ResultChan() {
+    switch e.Type {
+    case watch.Modified:
+      updatedDeployment := e.Object.(*seldonapi.SeldonDeployment)
+
+      if updatedDeployment.ObjectMeta.Name == name &&
+      updatedDeployment.Status.State == seldonapi.StatusStateAvailable {
+        watcher.Stop()
+        return nil
+      }
+    case watch.Error:
+      watcher.Stop()
+      return errors.New("SeldonDeployment could not be created")
+    case watch.Deleted:
+      watcher.Stop()
+      return errors.New("SeldonDeployment was deleted unexpectedly")
+    }
+  }
+
+  return errors.New(fmt.Sprintf("Deployment '%s' did not become ready", name))
 }
 
 func main() {
