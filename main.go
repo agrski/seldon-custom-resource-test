@@ -221,6 +221,10 @@ func describeEvents() error {
 }
 
 func main() {
+  go func() {
+    describeEvents()
+  }()
+
   err := manageDeploymentLifecycle()
   if err != nil {
     log.Fatal(err)
