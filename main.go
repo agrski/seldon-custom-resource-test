@@ -140,61 +140,7 @@ func scaleDeployment(
   return err
 }
 
-func manageDeploymentLifecycle() error {
-  manifest, err := getResourceManifest()
-  if err != nil {
-    return err
-  }
-
-  deployment, err := getSeldonDeployment(manifest)
-  if err != nil {
-    return err
-  }
-
-  deploymentName := deployment.ObjectMeta.Name
-
-  deploymentClient, err := getSeldonDeploymentsClient()
-  if err != nil {
-    return err
-  }
-
-  err = createDeployment(deploymentClient, deployment)
-  if err != nil {
-    return err
-  }
-
-  err = awaitDeploymentAvailability(deploymentClient, deploymentName)
-  if err != nil {
-    return err
-  }
-
-  fmt.Println("Deployment created successfully")
-
-  desiredReplicas := int32(2)
-  err = scaleDeployment(deploymentClient, deploymentName, desiredReplicas)
-  if err != nil {
-    return err
-  }
-
-  err = awaitDeploymentAvailability(deploymentClient, deploymentName)
-  if err != nil {
-    return err
-  }
-
-  fmt.Printf("Deployment scaled to %v replicas\n", desiredReplicas)
-
-  deploymentClient.Delete(
-    context.TODO(),
-    deployment.ObjectMeta.Name,
-    metav1.DeleteOptions{},
-  )
-
-  fmt.Println("Deployment deleted")
-
-  return nil
-}
-
-func describeEvents() error {
+func describeEvents(name string) error {
   config, err := getConfig()
   if err != nil {
     return err
@@ -214,9 +160,8 @@ func describeEvents() error {
 
   for e := range watcher.ResultChan() {
     event := e.Object.(*corev1.Event)
-    // FIXME - resource name should not be hard-coded.
-    if event.InvolvedObject.Name == "seldon-model" {
-      fmt.Println(event.Message)
+    if event.InvolvedObject.Name == name {
+      fmt.Printf("%s\n\n", event.Message)
     }
   }
 
@@ -224,13 +169,58 @@ func describeEvents() error {
 }
 
 func main() {
-  go func() {
-    describeEvents()
-  }()
-
-  err := manageDeploymentLifecycle()
+  manifest, err := getResourceManifest()
   if err != nil {
     log.Fatal(err)
   }
+
+  deployment, err := getSeldonDeployment(manifest)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  deploymentName := deployment.ObjectMeta.Name
+
+  deploymentClient, err := getSeldonDeploymentsClient()
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  err = createDeployment(deploymentClient, deployment)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  go func() {
+    describeEvents(deploymentName)
+  }()
+
+  err = awaitDeploymentAvailability(deploymentClient, deploymentName)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  fmt.Println("Deployment created successfully")
+
+  desiredReplicas := int32(2)
+  err = scaleDeployment(deploymentClient, deploymentName, desiredReplicas)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  err = awaitDeploymentAvailability(deploymentClient, deploymentName)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  fmt.Printf("Deployment scaled to %v replicas\n", desiredReplicas)
+
+  deploymentClient.Delete(
+    context.TODO(),
+    deployment.ObjectMeta.Name,
+    metav1.DeleteOptions{},
+  )
+
+  fmt.Println("Deployment deleted")
 }
 
