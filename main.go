@@ -18,10 +18,18 @@ import (
   corev1 "k8s.io/api/core/v1"
   "k8s.io/apimachinery/pkg/watch"
   "k8s.io/client-go/kubernetes"
+  restclient "k8s.io/client-go/rest"
   "k8s.io/client-go/tools/clientcmd"
 )
 
 const k8sNamespace = "seldon"
+
+func getConfig() (*restclient.Config, error) {
+  kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
+
+  config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+  return config, err
+}
 
 func getResourceManifest() ([]byte, error) {
   var fileName string
@@ -56,9 +64,7 @@ func getSeldonDeployment(manifest []byte) (*seldonapi.SeldonDeployment, error) {
 }
 
 func getSeldonDeploymentsClient() (seldondeployment.SeldonDeploymentInterface, error) {
-  kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-
-  config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+  config, err := getConfig()
   if err != nil {
     return nil, err
   }
@@ -189,10 +195,7 @@ func manageDeploymentLifecycle() error {
 }
 
 func describeEvents() error {
-  // TODO - refactor config retrieval to function.
-  kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-
-  config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+  config, err := getConfig()
   if err != nil {
     return err
   }
