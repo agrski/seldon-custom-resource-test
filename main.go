@@ -15,11 +15,21 @@ import (
   seldonscheme "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned/scheme"
   seldondeployment "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned/typed/machinelearning.seldon.io/v1"
   metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+  corev1 "k8s.io/api/core/v1"
   "k8s.io/apimachinery/pkg/watch"
+  "k8s.io/client-go/kubernetes"
+  restclient "k8s.io/client-go/rest"
   "k8s.io/client-go/tools/clientcmd"
 )
 
 const k8sNamespace = "seldon"
+
+func getConfig() (*restclient.Config, error) {
+  kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
+
+  config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+  return config, err
+}
 
 func getResourceManifest() ([]byte, error) {
   var fileName string
@@ -54,9 +64,7 @@ func getSeldonDeployment(manifest []byte) (*seldonapi.SeldonDeployment, error) {
 }
 
 func getSeldonDeploymentsClient() (seldondeployment.SeldonDeploymentInterface, error) {
-  kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-
-  config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+  config, err := getConfig()
   if err != nil {
     return nil, err
   }
@@ -132,6 +140,34 @@ func scaleDeployment(
   return err
 }
 
+func describeEvents(name string) error {
+  config, err := getConfig()
+  if err != nil {
+    return err
+  }
+
+  clientset, err := kubernetes.NewForConfig(config)
+  if err != nil {
+    return err
+  }
+
+  eventsClient := clientset.CoreV1().Events(k8sNamespace)
+
+  watcher, err := eventsClient.Watch(context.TODO(), metav1.ListOptions{})
+  if err != nil {
+    return err
+  }
+
+  for e := range watcher.ResultChan() {
+    event := e.Object.(*corev1.Event)
+    if event.InvolvedObject.Name == name {
+      fmt.Printf("%s\n\n", event.Message)
+    }
+  }
+
+  return nil
+}
+
 func main() {
   manifest, err := getResourceManifest()
   if err != nil {
@@ -154,6 +190,10 @@ func main() {
   if err != nil {
     log.Fatal(err)
   }
+
+  go func() {
+    describeEvents(deploymentName)
+  }()
 
   err = awaitDeploymentAvailability(deploymentClient, deploymentName)
   if err != nil {
