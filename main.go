@@ -132,32 +132,32 @@ func scaleDeployment(
   return err
 }
 
-func main() {
+func manageDeploymentLifecycle() error {
   manifest, err := getResourceManifest()
   if err != nil {
-    log.Fatal(err)
+    return err
   }
 
   deployment, err := getSeldonDeployment(manifest)
   if err != nil {
-    log.Fatal(err)
+    return err
   }
 
   deploymentName := deployment.ObjectMeta.Name
 
   deploymentClient, err := getSeldonDeploymentsClient()
   if err != nil {
-    log.Fatal(err)
+    return err
   }
 
   err = createDeployment(deploymentClient, deployment)
   if err != nil {
-    log.Fatal(err)
+    return err
   }
 
   err = awaitDeploymentAvailability(deploymentClient, deploymentName)
   if err != nil {
-    log.Fatal(err)
+    return err
   }
 
   fmt.Println("Deployment created successfully")
@@ -165,12 +165,12 @@ func main() {
   desiredReplicas := int32(2)
   err = scaleDeployment(deploymentClient, deploymentName, desiredReplicas)
   if err != nil {
-    log.Fatal(err)
+    return err
   }
 
   err = awaitDeploymentAvailability(deploymentClient, deploymentName)
   if err != nil {
-    log.Fatal(err)
+    return err
   }
 
   fmt.Printf("Deployment scaled to %v replicas\n", desiredReplicas)
@@ -182,5 +182,14 @@ func main() {
   )
 
   fmt.Println("Deployment deleted")
+
+  return nil
+}
+
+func main() {
+  err := manageDeploymentLifecycle()
+  if err != nil {
+    log.Fatal(err)
+  }
 }
 
