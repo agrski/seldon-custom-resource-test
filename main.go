@@ -15,7 +15,9 @@ import (
   seldonscheme "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned/scheme"
   seldondeployment "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned/typed/machinelearning.seldon.io/v1"
   metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+  corev1 "k8s.io/api/core/v1"
   "k8s.io/apimachinery/pkg/watch"
+  "k8s.io/client-go/kubernetes"
   "k8s.io/client-go/tools/clientcmd"
 )
 
@@ -182,6 +184,38 @@ func manageDeploymentLifecycle() error {
   )
 
   fmt.Println("Deployment deleted")
+
+  return nil
+}
+
+func describeEvents() error {
+  // TODO - refactor config retrieval to function.
+  kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
+
+  config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+  if err != nil {
+    return err
+  }
+
+  clientset, err := kubernetes.NewForConfig(config)
+  if err != nil {
+    return err
+  }
+
+  eventsClient := clientset.CoreV1().Events(k8sNamespace)
+
+  watcher, err := eventsClient.Watch(context.TODO(), metav1.ListOptions{})
+  if err != nil {
+    return err
+  }
+
+  for e := range watcher.ResultChan() {
+    event := e.Object.(*corev1.Event)
+    // FIXME - resource name should not be hard-coded.
+    if event.InvolvedObject.Name == "seldon-model" {
+      fmt.Println(event.Message)
+    }
+  }
 
   return nil
 }
